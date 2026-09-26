@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>升官模拟器</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg-page:#f4ece0;--beam-bg:#d2be9c;--beam-border:#b8a280;--card-bg:#fbf5e8;
+  --card-border:#c8b492;--card-radius:14px;--card-padding-y:20px;--card-padding-x:18px;
+  --opt-bg:#fffaf0;--opt-border:#d9c7aa;--opt-radius:10px;--cinnabar:#b9412c;
+  --ink-main:#3a2b1a;--ink-soft:#6b5842;--line-height-base:1.65;
+}
+body{font-family:"KaiTi","STKaiti","SimSun",serif;background-color:var(--bg-page);
+  color:var(--ink-main);line-height:var(--line-height-base);min-height:100vh;
+  overflow-x:hidden;padding-bottom:70px;font-size:15px;}
+.top-beam{position:fixed;top:0;left:0;right:0;height:52px;background-color:var(--beam-bg);
+  border-bottom:1px solid var(--beam-border);z-index:10;display:flex;align-items:center;
+  justify-content:space-between;padding:0 12px;}
+.help-btn{width:28px;height:28px;border-radius:50%;border:1px solid var(--cinnabar);
+  background:var(--card-bg);color:var(--cinnabar);font-size:18px;z-index:11;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-weight:bold;}
+.help-btn:hover{background:var(--cinnabar);color:#fff;}
+.status-box{display:none;flex-direction:row;gap:20px;font-size:14px;}
+.status-item{display:flex;gap:6px;}
+.status-lab{color:var(--ink-soft);letter-spacing:1px;}
+.status-val{color:var(--cinnabar);font-weight:500;}
+.bottom-bar{position:fixed;left:0;right:0;bottom:0;height:60px;background:var(--beam-bg);
+  border-top:1px solid var(--beam-border);z-index:20;display:flex;align-items:center;
+  justify-content:center;gap:16px;padding:0 12px;}
+.bottom-btn{min-width:90px;padding:7px 10px;background:var(--opt-bg);
+  border:1px solid var(--opt-border);border-radius:var(--opt-radius);font-family:inherit;
+  font-size:14px;cursor:pointer;color:var(--ink-main);text-align:center;}
+.bottom-btn:hover{border-color:var(--cinnabar);}
+.bottom-btn.disabled-save{background:#e2ddcf;color:#999;border-color:#d1c8b4;cursor:not-allowed;}
+.bottom-btn.disabled-save:hover{border-color:#d1c8b4;}
+.save-mask{position:fixed;inset:0;background:rgba(20,14,8,0.45);display:none;
+  align-items:center;justify-content:center;z-index:100;padding:12px;}
+.save-mask.show{display:flex;}
+.save-box{width:100%;max-width:400px;background:var(--card-bg);border:1px solid var(--card-border);
+  border-radius:var(--card-radius);padding:20px;}
+.save-title{text-align:center;font-size:19px;letter-spacing:3px;margin-bottom:16px;color:var(--ink-main);}
+.slot-item{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--opt-border);
+  border-radius:var(--opt-radius);padding:12px 14px;margin-bottom:10px;background:var(--opt-bg);}
+.slot-info{font-size:14px;}
+.slot-empty{color:#999;}
+.slot-buttons{display:flex;gap:6px;}
+.slot-btn{padding:4px 8px;border:1px solid var(--opt-border);background:#fffaf0;border-radius:6px;
+  font-family:inherit;cursor:pointer;font-size:13px;}
+.slot-btn:hover{border-color:var(--cinnabar);}
+.slot-btn.del{color:#b9412c;}
+.save-close-wrap{text-align:center;margin-top:14px;}
+.home-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding-top:60px;padding-left:12px;padding-right:12px;}
+.home-title{font-size:46px;letter-spacing:10px;margin-bottom:10px;color:var(--ink-main);}
+.home-sub{font-size:14px;letter-spacing:3px;color:var(--ink-soft);margin-bottom:30px;}
+.home-panel{width:100%;max-width:400px;background:var(--card-bg);border:1px solid var(--card-border);
+  border-radius:var(--card-radius);padding:24px 20px;text-align:center;}
+.origin-choice-wrap{display:flex;gap:10px;margin-bottom:20px;}
+.origin-item{flex:1;padding:14px 8px;border:1px solid var(--opt-border);border-radius:var(--opt-radius);
+  background:var(--opt-bg);cursor:pointer;transition:0.2s;font-size:14px;}
+.origin-item.active{border-color:var(--cinnabar);background:#fff3ec;}
+.name-input{width:100%;padding:11px 14px;font-size:16px;border:1px solid var(--opt-border);
+  border-radius:var(--opt-radius);background:var(--opt-bg);color:var(--ink-main);
+  font-family:inherit;outline:none;margin-bottom:18px;}
+.name-input:focus{border-color:var(--cinnabar);}
+.main-btn{padding:11px 28px;background:var(--opt-bg);border:1px solid var(--opt-border);
+  border-radius:var(--opt-radius);font-size:16px;letter-spacing:3px;font-family:inherit;
+  cursor:pointer;transition:0.2s;color:var(--ink-main);}
+.main-btn:disabled{opacity:0.45;cursor:not-allowed;}
+.main-btn:hover:not(:disabled){border-color:var(--cinnabar);}
+.prologue-mask{position:fixed;inset:0;background:rgba(20,14,8,0.45);display:none;
+  align-items:center;justify-content:center;z-index:99;padding:12px;}
+.prologue-box{max-width:460px;width:100%;background:var(--card-bg);border:1px solid var(--card-border);
+  border-radius:var(--card-radius);padding:36px 32px;text-align:center;}
+.prologue-text{font-size:15px;line-height:1.9;margin-bottom:24px;color:var(--ink-main);white-space:pre-line;}
+.game-wrap{display:none;max-width:700px;margin:0 auto;padding-top:70px;padding-left:12px;
+  padding-right:12px;padding-bottom:16px;}
+.head-info{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:10px;
+  margin-bottom:16px;border-bottom:1px dashed #c8b492;}
+.player-info strong{font-size:17px;margin-right:6px;cursor:pointer;text-decoration:underline dotted;}
+.player-info{font-size:14px;color:var(--ink-soft);letter-spacing:2px;}
+.progress-tip{font-size:13px;color:var(--ink-soft);letter-spacing:2px;}
+.doc-panel{background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--card-radius);
+  padding:var(--card-padding-y) var(--card-padding-x);}
+.case-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;}
+.case-mark{background:var(--cinnabar);color:#fff;font-size:12px;padding:3px 8px;border-radius:6px;
+  letter-spacing:2px;flex-shrink:0;}
+.case-title{font-size:20px;letter-spacing:4px;color:var(--ink-main);}
+.case-text{font-size:15px;padding:12px 14px;background:rgba(255,255,255,0.45);
+  border-left:3px solid #947853;border-radius:8px;margin-bottom:18px;line-height:1.65;}
+.opt-list{display:flex;flex-direction:column;gap:11px;}
+.opt-item{background:var(--opt-bg);border:1px solid var(--opt-border);border-radius:var(--opt-radius);
+  padding:13px 15px;font-size:15px;cursor:pointer;transition:0.2s;position:relative;padding-left:28px;}
+.opt-item.disabled-opt{opacity:0.45;cursor:not-allowed;transform:none !important;}
+.opt-item::before{content:"";position:absolute;left:10px;top:50%;transform:translateY(-50%);
+  width:6px;height:6px;border-radius:50%;background:#b8a280;}
+.opt-item:hover:not(.disabled-opt){border-color:var(--cinnabar);transform:translateX(3px);}
+.opt-item:hover:not(.disabled-opt)::before{background:var(--cinnabar);}
+.result-block{display:none;margin-top:18px;background:var(--opt-bg);border:1px solid var(--opt-border);
+  border-radius:var(--opt-radius);padding:16px;}
+.result-story{font-size:15px;margin-bottom:12px;line-height:1.65;}
+.delta-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+.tag-item.plus{border:1px solid #288c40;color:#288c40;padding:4px 9px;border-radius:18px;
+  font-size:13px;letter-spacing:1px;}
+.tag-item.minus{border:1px solid #b9412c;color:#b9412c;padding:4px 9px;border-radius:18px;
+  font-size:13px;letter-spacing:1px;}
+.result-foot{text-align:right;}
+.modal-mask{position:fixed;inset:0;background:rgba(35,24,14,0.42);display:none;
+  align-items:center;justify-content:center;z-index:99;padding:12px;}
+.modal-mask.show{display:flex;}
+.modal-content{width:100%;max-width:420px;background:var(--card-bg);border:1px solid var(--card-border);
+  border-radius:var(--card-radius);padding:24px 20px;text-align:center;}
+.modal-top-line{font-weight:bold;color:var(--cinnabar);margin-bottom:8px;font-size:14px;}
+.modal-title{font-size:21px;letter-spacing:5px;color:var(--cinnabar);margin-bottom:12px;}
+.modal-body{font-size:15px;margin-bottom:18px;line-height:1.75;white-space:pre-line;text-align:left;}
+.career-mask{position:fixed;inset:0;background:rgba(20,14,8,0.45);display:none;
+  align-items:center;justify-content:center;z-index:102;padding:12px;}
+.career-mask.show{display:flex;}
+.career-box{width:100%;max-width:400px;background:var(--card-bg);border:1px solid var(--card-border);
+  border-radius:var(--card-radius);padding:20px;text-align:left;}
+.career-title{text-align:center;font-size:19px;letter-spacing:3px;margin-bottom:14px;}
+.career-row{margin:7px 0;font-size:14px;}
+.career-close-wrap{text-align:center;margin-top:16px;}
+.book-mask{position:fixed;inset:0;background:rgba(20,14,8,0.45);display:none;
+  align-items:center;justify-content:center;z-index:101;padding:12px;}
+.book-mask.show{display:flex;}
+.book-box{width:100%;max-width:400px;background:var(--card-bg);border:1px solid var(--card-border);
+  border-radius:var(--card-radius);padding:20px;}
+.book-title{text-align:center;font-size:19px;letter-spacing:3px;margin-bottom:14px;}
+.book-item{padding:8px 0;border-bottom:1px solid #e2d6c2;text-align:left;font-size:14px;}
+.book-item.locked{color:#999;}
+@media(max-width:600px){
+  .home-title{font-size:38px;letter-spacing:8px;}
+  .origin-choice-wrap{flex-direction:column;}
+  .status-box{gap:12px;}
+  .bottom-bar{gap:8px;padding:0 10px;}
+  .bottom-btn{min-width:75px;padding:6px 6px;font-size:13px;}
+  .prologue-box{padding:28px 22px;}
+}
+</style>
+</head>
+<body>
+<div class="top-beam">
+  <div class="help-btn" id="helpBtn">?</div>
+  <div class="status-box" id="statusBox">
+    <div class="status-item"><span class="status-lab">银钱</span><span class="status-val" id="money">5 两</span></div>
+    <div class="status-item"><span class="status-lab">体力</span><span class="status-val" id="stamina">8 / 10</span></div>
+  </div>
+</div>
+<div class="career-mask" id="careerMask">
+  <div class="career-box">
+    <div class="career-title">任职详情</div>
+    <div class="career-row"><strong>所属机构：</strong><span id="caDept"></span></div>
+    <div class="career-row"><strong>所属地：</strong><span id="caLoc"></span></div>
+    <div class="career-row"><strong>岗位简述：</strong><span id="caDesc"></span></div>
+    <div class="career-row"><strong>前职：</strong><span id="caPrev"></span></div>
+    <div class="career-close-wrap"><button class="main-btn" id="closeCareerBtn">关闭</button></div>
+  </div>
+</div>
+<div class="bottom-bar">
+  <button class="bottom-btn" id="saveOpenBtn">存档</button>
+  <button class="bottom-btn" id="loadOpenBtn">读档</button>
+  <button class="bottom-btn" id="bookOpenBtn">结局图鉴</button>
+</div>
+<div class="save-mask" id="saveMask">
+  <div class="save-box">
+    <div class="save-title" id="saveModalTitle">存档档位</div>
+    <div id="slotList"></div>
+    <div class="save-close-wrap"><button class="main-btn" id="closeSaveBtn">关闭</button></div>
+  </div>
+</div>
+<div class="book-mask" id="bookMask">
+  <div class="book-box">
+    <div class="book-title">结局图鉴</div>
+    <div id="bookList"></div>
+    <div style="text-align:center;margin-top:14px"><button class="main-btn" id="closeBookBtn">关闭</button></div>
+  </div>
+</div>
+<div class="home-wrap" id="home">
+  <h1 class="home-title">升官模拟器</h1>
+  <div class="home-sub">—— 两条出身，各自抉择 ——</div>
+  <div class="home-panel">
+    <div class="origin-choice-wrap">
+      <div class="origin-item" data-origin="poor">寒门｜科举入仕</div>
+      <div class="origin-item" data-origin="noble">世荫｜恩荫入仕</div>
+    </div>
+    <input class="name-input" id="playerName" placeholder="请输入你的名字" maxlength="12">
+    <br>
+    <button class="main-btn" id="startBtn" disabled>开启官途</button>
+  </div>
+</div>
+<div class="prologue-mask" id="prologueMask">
+  <div class="prologue-box">
+    <div class="prologue-text" id="prologueText"></div>
+    <button class="main-btn" id="prologueConfirm">确认</button>
+  </div>
+</div>
+<div class="game-wrap" id="game">
+  <div class="head-info">
+    <div class="player-info"><strong id="nameTag">无名</strong> <span id="rankTag">从九品署理主事</span></div>
+    <div class="progress-tip" id="progressText"></div>
+  </div>
+  <div class="doc-panel">
+    <div class="case-header">
+      <span class="case-mark" id="caseMark">公务一</span>
+      <div class="case-title" id="caseTitle"></div>
+    </div>
+    <div class="case-text" id="caseDesc"></div>
+    <div class="opt-list" id="optList"></div>
+    <div class="result-block" id="resultBlock">
+      <div class="result-story" id="resStory"></div>
+      <div class="delta-tags" id="tagWrap"></div>
+      <div class="result-foot"><button class="main-btn" id="nextEv">继续</button></div>
+    </div>
+  </div>
+</div>
+<div class="modal-mask" id="modal">
+  <div class="modal-content">
+    <div class="modal-top-line" id="modalCareerTop"></div>
+    <div class="modal-title" id="modTitle">提示</div>
+    <div class="modal-body" id="modBody"></div>
+    <button class="main-btn" id="modClose">进入下一篇章</button>
+  </div>
+</div>
+<script>
+const ENDINGS_DEF = {
+  trustFail:{name:"枉负信任",desc:"吏员检举你私自篡改文书牟利，你在她得意的嘴脸中被官署除名，重做白身。"},
+  pettyHeart:{name:"小人之心",desc:"你说你恰好也过生辰，不若郝同僚替你掏一份份子，就当送你的生辰礼物。也许这话让郝同僚觉得你在打她的脸，她因此记恨，往后总在上官面前不停搬弄你的是非，上官对你印象越来越差，从此仕途惨淡，郁郁而终。"},
+  dismiss:{name:"考绩下等",desc:"这一轮考绩最终落了下等。官职被尽数褫夺，贬为白身。多年衙门奔波就此化为泡影，官场这条路，对你而言已经走到尽头。往后只能以一介布衣的身份度日，再也无缘朝堂品级。"},
+  overworkDead:{name:"出师未捷",desc:"积劳成疾，繁重的公务拖垮了你的身体，而你还未拿到属于自己的大结果。"},
+  greedFail:{name:"贪必自贼",desc:"你的行径被人发觉，仕途就此终结。利欲迷心忘止足，一朝败露万事休。回头是岸！"},
+  beamDead:{name:"飞来横梁",desc:"库房老旧书架年久失修，你擦得嘎吱嘎吱响，没留意头顶的梁架摇摇欲坠。轰隆一声，你感觉头颈一阵剧痛，随即陷入长眠。一场荒唐的团建，就此终结了你短暂的仕途。"},
+  ascendSail:{name:"扶摇直上",desc:"两家男儿都要做正夫，你谁也不想得罪，只好都拒了。最后经人介绍，你纳了皇男身边的、年满出宫的宫男。一次你随夫人入宫谢恩，皇男对你一见倾心，向母皇要求下嫁。于是你成了当朝驸马，并将原配纳作侧室，贵夫美侍，时人艳羡不已。"},
+  eyeDisease:{name:"偶有眼疾",desc:"你光是看清黑漆漆的甲胄，却没看清上官的心。直到被刺客一刀捅穿，你都不知道自己究竟看到了什么。"}
+};
+const SAVE_KEY = "officialSimSave";
+const BOOK_KEY = "officialSimBook";
+const PROLOGUE_TEXT = {
+  poor:"寒窗苦读十年，一路过关斩将，你终于考取功名，得授从九品署理主事。正式踏入官场之后，人情利害交织在一起，每一次选择，都会直接影响往后的仕途走向。\n现在，开启你的官场之路吧！",
+  noble:"📝 世荫线 · 创作中，敬请期待……"
+};
+const CAREER_DATA = {
+  "从九品署理主事":{dept:"尚书工部",loc:"京城",desc:"在皇城工部衙署处理工程文书，偶尔赴工地巡查",prev:"科举授官，初入仕途"},
+  "正九品 营构丞":{dept:"将作监",loc:"京城",desc:"掌管各类土木营建事务，审看营建方案，核验物料，常常去工地巡察。",prev:"从九品署理主事"},
+  "从八品 左校署令":{dept:"将作监·左校署",loc:"京城",desc:"作为一署之长，统筹施工安排，审核用料，处置工程相关纠纷。",prev:"正九品 营构丞"},
+  "正八品 武库署丞":{dept:"卫尉寺",loc:"京城",desc:"掌管武库仪仗军械的簿籍与库藏查验，常驻衙署库房，极少外出外勤",prev:"从八品 左校署令"},
+  "从五品驸马都尉":{dept:"内廷",loc:"京城",desc:"当朝驸马都尉，尚皇男，荣宠一身。",prev:"从八品 左校署令"}
+};
+const state = {
+  name:"无名",origin:null,money:5,stamina:8,tact:0,corrupt:0,loyal:0,talent:0,
+  index:0,selected:[null,null,null],flags:{task1B:false,task2A:false,task2B:false,task3B:false},
+  careerHigh:"从九品署理主事",hasBirthEvent:false,hasRestTeamEvent:false,atResultPage:false,
+  rank9Zheng:false,zhengIndex:0,zhengSelected:[],zhengFlags:[],
+  rank8Cong:false,rank8Index:0,rank8Selected:[],rank8Flags:[],
+  rank8Zheng:false,zheng8Index:0,zheng8Selected:[],zheng8Flags:[],hasFormerSuperiorEvent:false
+};
+const events = [
+{mark:"公务一",title:"建材账目有异",desc:"公务盘查库房，核对城墙修缮木料，账册记载数量与实际库存不符。工部资深吏员私下找到你，劝你将此事按笔误了结，依原账上报即可。若执意深究，恐招致同僚排挤。",
+options:[
+{label:"按她说的做，主打一个听劝。",result:"文书顺利呈递，上官并未起疑。吏员此后待你颇为热络，多有照拂，私下赠予银一两作为酬谢。眼下风波平息，但若日后旧案重查，你或难逃牵连。",money:1,stamina:0,tact:1,loyal:0,talent:0,flagKey:null},
+{label:"正面硬刚，把差额直接写进报告上交",result:"上官阅后赞许你行事笃实。但老吏怀恨在心，往后对接公务时常刻意拖延、多方掣肘。",money:0,stamina:0,tact:0,loyal:1,talent:0,flagKey:"task1B"},
+{label:"先压下文书，自己跑去查明白再说",result:"连日奔走库房与转运站点核验，方才查明木料实为途中遭雨水浸蚀损耗，先前记账之人漏录此事。补写勘明说明后上交，上官颇为满意，老吏亦抓不到把柄，只是你也因此心力交瘁。",money:0,stamina:-2,tact:0,loyal:0,talent:1,flagKey:null}
+]},
+{mark:"公务二",title:"匠户申诉",desc:"有匠户妇夫至衙署申诉。因工期迁延，官府配给口粮不足，家中幼子染病，恳请暂宽徭役。主管匠户的小吏认为二人有意怠工，主张驳回诉状，不可贻误工期。",
+options:[
+{label:"认同小吏，驳回申诉并勒令她们按时到岗",result:"工程进度似乎如期推进，但匠户心中积怨渐深，坊间渐起苛待匠役的流言。",money:0,stamina:0,tact:0,loyal:1,talent:0,flagKey:"task2A"},
+{label:"于心不忍，上书求放她们回家照看幼子",result:"匠户一家对你感恩不尽，四处传扬你的仁善。但上司认为你擅动规制，考评写下“持重不足”，你为此写了很多陈情文书。",money:0,stamina:-1,tact:0,loyal:0,talent:0,flagKey:"task2B"},
+{label:"诉状先搁一搁，亲自跑一趟居中调解",result:"亲往匠户聚居地沟通，一面向上官申请增拨少量口粮，一面安排该户改做轻役，不至耽误整体工期。双方大体安抚妥当，只是来回奔走颇为劳顿。",money:0,stamina:-2,tact:0,loyal:0,talent:1,flagKey:null}
+]},
+{mark:"公务三",title:"文书抄录谬误",desc:"你誊写修缮工程预算文书，同署年轻吏员提醒，其中一处建材单价抄写有误。原样上交，罪责将归于你；私自涂改公文亦不合典制。吏员好心教了你一招——在后文略添几笔内容，就能瞒天过海。",
+options:[
+{label:"还是老油条有招，就这么办吧。",resultOk:"文书上交，没人发觉不对，你拉着吏员高高兴兴去搓了一顿。",resultFail:"FAIL_TRUST",moneyOk:-1,staminaOk:0,tactOk:1,loyalOk:0,talentOk:0,flagKey:null,isRandom:true},
+{label:"把错处谨慎涂改成爱心形状，呈给上官",result:"文书呈递之后，上官很生气，责备你处事鲁莽，于是你用自己半月的俸禄，买下新的文书笔墨重新抄录。",money:-2,stamina:-1,tact:0,loyal:0,talent:0,flagKey:"task3B",isRandom:false},
+{label:"拿着原稿去请示上官怎么办",result:"上官接见了你，并把你臭骂一顿。但念你及时陈情于她，也算处事得体，便帮你一起补救，把过失悄悄遮掩过去。",money:0,stamina:-1,tact:0,loyal:0,talent:1,flagKey:null,isRandom:false}
+]}
+];
+const birthEvent = {
+mark:"特殊事件",title:"上官生辰",desc:"这日你处理完手头公务，正等着退衙，前辈郝同僚向众人走了过来。\n“上官生辰将近，各位同僚凑些银两，交由我统一置办贺礼送去如何？”\n扫过一圈神色各有心思的同僚，你决定——",
+options:[
+{label:"拿去拿去",result:"人在江湖身不由己，看其他人都打算出钱，你也只好跟着交了份子。",money:-1,stamina:0,tact:0,loyal:0,talent:0,triggerEnd:null},
+{label:"我也过生辰",result:"",money:0,stamina:0,tact:0,loyal:0,talent:0,triggerEnd:"pettyHeart"},
+{label:"自己偷偷送",result:"你婉拒中间商赚差价，转头自掏腰包备好礼物，私下送给上官。上官很感动，并感叹只有你和郝同僚记得她的生辰。",money:-2,stamina:0,tact:1,loyal:0,talent:0,triggerEnd:null}
+]};
+const eventsRank9Zheng = [
+{mark:"公务一",title:"寺观扩建逾制",desc:"京城某寺观申请扩建配殿，递上来营建方案。你定睛一看，规模、形制已经超过制度允许的等级。寺僧私下托人说情，希望你初审时睁一只眼闭一只眼。",
+options:[
+{label:"暗示对方：如果意思意思，你也将意思意思",resultOk:"对方听懂了你的弦外之音，奉上10两银子，你也如约批过初审。",resultFail:"GREED_FAIL",moneyOk:10,staminaOk:0,tactOk:0,loyalOk:0,talentOk:0,corruptOk:2,flagKey:"zhengA",isRandom:true,prob:0.65},
+{label:"直接驳回，要求重新整改",result:"你严格按照制度驳回扩建申请。寺中大为失望，中间说情之人也面露不快。但上官认为你恪守法度，对你口头嘉奖。",money:0,stamina:0,tact:0,loyal:1,talent:0,flagKey:"zhengB"},
+{label:"指点寺僧改换名目，变通扩建",result:"直接放水的责任你承担不了，但你也想结个善缘。于是你指点寺僧改换名目，如用僧寮、经藏偏舍，这样便能合规增加一定的扩建空间。因为你的变通，事件算是得以两全。",money:0,stamina:-2,tact:0,loyal:0,talent:1,flagKey:"zhengC"}
+]},
+{mark:"公务二",title:"工料估算扯皮",desc:"采办署上报一份营建用料预估，数字虚高。对方主张近年物料涨价、运输艰难；而工部则觉得采办署故意多报预算套取经费。长官让你重新勘估，居中核实。",
+options:[
+{label:"谁不知采办署出老鼠？据实核减预算！",result:"你决心狠狠整顿这群坏鼠，按市价大力裁削预估数额。采办署不服，向你的上官狠狠告状。",money:0,stamina:-1,tact:0,loyal:1,talent:0,flagKey:"zhengD"},
+{label:"不擅动预算，附录疑点交给上官裁定",result:"你将采办署报价疑点逐条笔录备案，连同原册交给你的上官决断。长官认为你缺少勘断魄力，不甚满意。",money:0,stamina:-2,tact:0,loyal:0,talent:0,flagKey:"zhengE"},
+{label:"善用工部人脉，了解缘由寻找突破口",result:"你借着昔日工部旧交，私下访询内情，摸清两边争执的真实原委，据此再定勘估额度。只是旧僚只肯私下言语，不肯公开作证；而采办署察觉你私通工部，颇有微词。",money:0,stamina:-3,tact:0,loyal:0,talent:1,flagKey:"zhengF"}
+]},
+{mark:"公务三",title:"工伤抚恤事件",desc:"京郊有一处施工地意外塌方，多名工匠和探望的男眷殒命。按律令只发放殉职工匠抚恤金，可家属聚众闹到衙门，要求按人头发放抚恤金。县令苦不堪言，只得向将作监求助。上官派你前去处置，你决定——",
+options:[
+{label:"女人是人，男人是男，按人头也只发女人",result:"你的话传了出去，民怨沸腾，甚至有人日日蹲在你家门口丢烂菜叶。",money:0,stamina:-4,tact:0,loyal:0,talent:0,flagKey:"zhengG"},
+{label:"所有遇难者一律抚恤",result:"你认为于情于理都应该向所有遇难者致意，于是拍板向上申请更多抚恤银钱。百姓四处传扬你的仁义，而负责拨付预算的户部压力陡增，对你颇为不满。",money:0,stamina:-2,tact:0,loyal:1,talent:0,flagKey:"zhengH"},
+{label:"自掏俸禄，主持募捐",result:"你深知向户部要钱如同虎口夺食。你怜悯遇难者，自掏腰包捐款，同时向上官提议官署募捐，凑得些银钱交予家属。仍有人不满，但更多人对你表达感激。",money:0,stamina:-2,tact:0,loyal:0,talent:1,flagKey:"zhengI"}
+]}
+];
+const eventsRank8Cong = [
+{mark:"公务一",title:"工匠风波",desc:"你的下属来禀，近日一众资深工匠自恃手艺独门，不仅消极怠工，还抱团排挤年轻匠人。下属甚至暗示你，她们这么做也许是想给你这个新官一个下马威。你决定——",
+options:[
+{label:"狠狠处置其中头目，整顿风纪",result:"你依照最重的惩罚处置了几个惹事的刺头，她们果然有所收敛，最终堪堪赶上工期交差。",money:0,stamina:-2,tact:0,loyal:1,talent:0,flagKey:"rank8A"},
+{label:"自掏私银，私下安抚头目",result:"自己出银钱安抚匠役头目，希望能暂时平息风波，不延误工期。可你大大低估了这群乌合之众的胃口，被狠狠敲了一笔。虽然按时完工，但温吞的作风让你此后难以服众。",money:-10,stamina:-3,tact:0,loyal:0,talent:0,flagKey:"rank8B"},
+{label:"交给老资历的属吏应对",result:"老成属吏从中斡旋，顺利化解了当下对立矛盾。上下都认为你知人善任，对你这个新官刮目相看。",money:0,stamina:-2,tact:0,loyal:0,talent:1,flagKey:"rank8C"}
+]},
+{mark:"特殊事件",title:"择日纳夫",desc:"你事业有成，却还未成家，周围的人都在帮你想看。母父族人给你物色了一个财主家的小男儿，年芳十五，不用聘礼还自带百两嫁粧。上官也给你做媒了一个五品官员的长男，年芳 23，小你 3 岁，纳进门对官途或有助益，去掉聘礼你还能得 50 两嫁粧。\n你中意——",
+options:[
+{label:"财主小正太",result:"应允族人安排，你纳下财主家嗲憨可爱的小男儿，丰厚嫁粧归入府中。",money:100,stamina:0,tact:0,loyal:0,talent:0,flagKey:null},
+{label:"官家大御哥",result:"你更想进步，于是纳了五品官员的长男。倚仗对方家世，你觉得自己前途一片敞亮。",money:50,stamina:0,tact:0,loyal:0,talent:3,flagKey:null},
+{label:"不能都要吗",result:"",money:0,stamina:0,tact:0,loyal:0,talent:0,flagKey:null,triggerEnd:"ascendSail"}
+]},
+{mark:"公务二",title:"木料掺次",desc:"工部调拨的木料运抵署中入库，核验之时发现混有大量朽弯次材，实际可用木料远少于文书登记数额，此事该如何处置。",
+options:[
+{label:"对上官大倒苦水，狠狠告前司一状",result:"为避免工期罪责落到本署，你找到上官，鼻涕一把泪一把，狠狠告了一状。上官安抚你两句，并下令彻查。工部经办之人遭受申斥责罚，对你颇有怨言。",money:0,stamina:-3,tact:0,loyal:1,talent:0,flagKey:"rank8D"},
+{label:"多一事不如少一事，拣出可用木料使用",result:"挑出尚可使用木料直接投入使用，劣材隐瞒不报。虽能勉强维持进度，若营建出事，罪责便会归于你身。",money:0,stamina:-6,tact:0,loyal:0,talent:0,flagKey:"rank8E"},
+{label:"找到工部采办人脉，问她是不是吃回扣了",result:"“说啥呢姐妹！”对方跟你嬉皮笑脸，承诺帮你把事情摆平。",money:0,stamina:-2,tact:0,loyal:0,talent:1,flagKey:"rank8F"}
+]},
+{mark:"公务三",title:"下属逢迎",desc:"署中不少下属见你新官上任，纷纷想方设法讨好巴结，馈赠礼物、言语逢迎络绎不绝。面对这般光景，你决定——",
+options:[
+{label:"端起架子，训斥她们心术不正",result:"你摆出上官姿态，厉声训斥一众下属投机逢迎、心术不正。众人被训得惶恐收敛，不敢再来讨好。",money:0,stamina:0,tact:0,loyal:1,talent:0,flagKey:"rank8G"},
+{label:"暗示她们自己新得一批好茶，甚是喜欢",result:"你随意一句话，下属纷纷心领神会，开始投你所好打点往来。",money:0,stamina:0,tact:0,corrupt:1,loyal:0,talent:0,flagKey:"rank8H"},
+{label:"自己也做懂事的下属",result:"你备上礼品，主动去上官跟前奔走示好，指望借上官之意为本署争取一个好考评。",money:0,stamina:-2,tact:0,corrupt:2,loyal:0,talent:0,flagKey:"rank8I"}
+]}
+];
+const restTeamEvent = {
+mark:"特殊事件",title:"休沐团建",desc:"休沐之日，署里传下通知，要库房清扫团建。文书写“锻炼体魄，大有裨益。自愿参与，计入考勤”。环顾四周，同僚们面色各异，你决定——",
+options:[
+{label:"准点到场，埋头猛干",resultOk:"你抢着包揽脏活累活，一身使不完的牛劲，上官对你大加赞许。",resultFail:"BEAM_DEAD",moneyOk:0,staminaOk:-2,tactOk:0,loyalOk:0,talentOk:1,isRandom:true,prob:0.5},
+{label:"以家中嫡长鸡生蛋为由告假",result:"你一本正经禀明上官：爱鸡生产，需得在家照看。顶着上官古怪的眼神你成功告假，舒舒服服地窝在家中煨茶叶蛋。",money:0,stamina:2,tact:0,loyal:0,talent:0,flagKey:null},
+{label:"参与积极性极高，但能动嘴就不动手",result:"嘴上干劲十足，手上能躲就躲，大半活计全推给旁人，周围同僚看你的眼神很是火热。",money:0,stamina:-1,tact:1,loyal:0,talent:1,flagKey:null}
+]};
+const eventsRank8Zheng = [
+  {mark:"公务一",title:"无名甲胄",desc:"新官上任，你为尽快适应公务，常下仓库核查盘点。这日你误入仓库深处的一扇暗门。门内一排排甲胄整齐码放，其上的军籍编号皆被刻意磨掉，显然藏着不小秘密。你准备：",
+    options:[
+      {label:"当做什么也没看见",result:"你心知绝不能趟这趟浑水，确定四下无人后，悄然退出，重新关好暗门。",money:0,stamina:-2,tact:0,loyal:0,talent:0,flagKey:null},
+      {label:"立刻向上官报自己的重大发现",result:"",money:0,stamina:0,tact:0,loyal:0,talent:0,flagKey:null,triggerEnd:"eyeDisease"},
+      {label:"慌乱之下夺门而出",result:"你夺走了门，甲胄暴露在外。第二日你听闻昨日当班的库吏人间蒸发，不知所踪。",money:0,stamina:-3,tact:0,loyal:0,talent:0,flagKey:null}
+    ]},
+  {mark:"公务二",title:"镇宅兵器",desc:"乐安王府长史来到官署拜会你的上官，称自家王主近日多梦难眠。道人看过之后，说要以新制的兵器镇宅方能好转，于是特来借取。乐安王行事荒唐，却颇得圣眷。上官命你处理此事，你决定：",
+    options:[
+      {label:"搬出典章，当面直接回绝",result:"你拿出朝廷规章，直言官署兵器仪仗管束极严，不可私自拨付，还请取了文书来借。长史悻悻而归，而乐安王也因此不悦。",money:0,stamina:-3,tact:0,loyal:1,talent:0,flagKey:"zheng8A"},
+      {label:"俸禄多厚责任多重，把事情呈回给上官",result:"你生怕得罪乐安王，不敢擅动，眼巴巴等上官定夺。上官不愿得罪王府，亲口吩咐你取了兵器交付。事后言官因此弹劾乐安王，圣上痛斥卫尉寺管理有缺，降了上官的职位，你也被牵连罚俸。",money:-10,stamina:-2,tact:0,loyal:0,talent:0,flagKey:"zheng8B"},
+      {label:"直接领着人进库房挑选",result:"你大开库房，酣畅淋漓地为长史搬出一大车的兵器。事后言官因此弹劾乐安王，圣上痛斥卫尉寺管理有缺，降了上官的职位，你也被牵连罚俸。",money:-10,stamina:-5,tact:0,loyal:0,talent:0,flagKey:"zheng8C"}
+    ]},
+  {mark:"公务三",title:"稚子平账",desc:"上官的幼子玩闹间损坏了一座仪仗。此物不算贵重，但属于登记在册的官物，不能随意缺损。作为仪仗的责管人，你决定：",
+    options:[
+      {label:"让上官赔偿",result:"你行文告知上官，由她承担修复所需工料费用。上官嘉奖你为官忠直，以能者多劳为由给你增添了许多差事。",money:0,stamina:-5,tact:0,loyal:1,talent:0,flagKey:"zheng8D"},
+      {label:"自己掏钱赔偿",result:"你担心开口索要赔偿会被穿小鞋，只好暗自吃下哑巴亏，用自己的银钱安排匠役修补。",money:-5,stamina:0,tact:0,loyal:0,talent:0,flagKey:null},
+      {label:"做账用公款填补",result:"你把木座的修复开销写入一项修缮工单之内。上官审阅文书，心知肚明，便签字默许。她并未察觉，你也借着这笔账目中饱私囊。",money:20,stamina:0,tact:0,corrupt:2,loyal:0,talent:0,flagKey:"zheng8E"}
+    ]}
+];
+const formerSuperiorEvent = {
+  mark:"特殊事件",title:"前上官有喜",
+  desc:"升迁以来，你总觉得自己与此地八字不合。公务繁杂，还有个难对付的笑面虎上官……你不由怀念起在将作营的光景。\n这日，你收到前上官的请帖，原是她为了庆贺有孕，在家设下宴席，和各位亲友同僚同喜。你欣然赴宴，在席间：",
+  options:[
+    {label:"和前上官叙旧",result:"酒过三巡，你不由和她抱怨起如今的差事。她听后耐心向你传授了不少为官处事之道，你受益良多。",money:0,stamina:0,tact:0,loyal:0,talent:1,flagKey:null},
+    {label:"趁机结识人脉",result:"借着这场喜宴，你四处应酬交际，收获颇多。",money:-5,stamina:0,tact:0,loyal:0,talent:1,flagKey:null},
+    {label:"吃好喝好，放松心情",result:"你只顾跟着众人热热闹闹吃喝玩乐，席间还抽中一份小彩头。",money:2,stamina:0,tact:0,loyal:0,talent:0,flagKey:null}
+  ]
+};
+
+const home=document.getElementById("home"),game=document.getElementById("game"),statusBox=document.getElementById("statusBox");
+const playerNameInput=document.getElementById("playerName"),startBtn=document.getElementById("startBtn");
+const nameTag=document.getElementById("nameTag"),rankTag=document.getElementById("rankTag"),progressText=document.getElementById("progressText");
+const caseMark=document.getElementById("caseMark"),caseTitle=document.getElementById("caseTitle"),caseDesc=document.getElementById("caseDesc");
+const optList=document.getElementById("optList"),resultBlock=document.getElementById("resultBlock"),resStory=document.getElementById("resStory");
+const tagWrap=document.getElementById("tagWrap"),nextEv=document.getElementById("nextEv"),moneyEl=document.getElementById("money"),staminaEl=document.getElementById("stamina");
+const modal=document.getElementById("modal"),modTitle=document.getElementById("modTitle"),modBody=document.getElementById("modBody"),modClose=document.getElementById("modClose");
+const modalCareerTop=document.getElementById("modalCareerTop"),helpBtn=document.getElementById("helpBtn"),careerMask=document.getElementById("careerMask");
+const caDept=document.getElementById("caDept"),caLoc=document.getElementById("caLoc"),caDesc=document.getElementById("caDesc"),caPrev=document.getElementById("caPrev");
+const closeCareerBtn=document.getElementById("closeCareerBtn"),prologueMask=document.getElementById("prologueMask"),prologueTextEl=document.getElementById("prologueText");
+const prologueConfirm=document.getElementById("prologueConfirm"),saveOpenBtn=document.getElementById("saveOpenBtn"),loadOpenBtn=document.getElementById("loadOpenBtn");
+const closeSaveBtn=document.getElementById("closeSaveBtn"),saveMask=document.getElementById("saveMask"),saveModalTitle=document.getElementById("saveModalTitle");
+const slotListWrap=document.getElementById("slotList"),bookOpenBtn=document.getElementById("bookOpenBtn"),bookMask=document.getElementById("bookMask");
+const bookListEl=document.getElementById("bookList"),closeBookBtn=document.getElementById("closeBookBtn");
+const originItems=Array.from(document.querySelectorAll(".origin-item"));
+
+function updateSaveButtonState(){
+  const canSave=(game.style.display==="block")&&!modal.classList.contains("show")&&!state.atResultPage;
+  if(canSave){saveOpenBtn.classList.remove("disabled-save");}else{saveOpenBtn.classList.add("disabled-save");}
+}
+function loadUnlockedEndings(){try{const raw=localStorage.getItem(BOOK_KEY);if(!raw)return new Set();return new Set(JSON.parse(raw));}catch(e){return new Set();}}
+function saveUnlockEnd(key){const set=loadUnlockedEndings();set.add(key);localStorage.setItem(BOOK_KEY,JSON.stringify(Array.from(set)));}
+function renderBook(){const unlocked=loadUnlockedEndings();bookListEl.innerHTML="";for(const k in ENDINGS_DEF){const ed=ENDINGS_DEF[k];const div=document.createElement("div");div.className="book-item "+(unlocked.has(k)?"":"locked");if(unlocked.has(k)){div.innerHTML=`<strong>${ed.name}</strong><br /><span style="font-size:14px">${ed.desc}</span>`;}else{div.innerText=`??? ${ed.name} （尚未解锁）`;}bookListEl.appendChild(div);}}
+bookOpenBtn.onclick=()=>{renderBook();bookMask.classList.add("show");};
+closeBookBtn.onclick=()=>{bookMask.classList.remove("show");};
+helpBtn.onclick=()=>{
+  modTitle.textContent="游戏设定";
+  modBody.textContent=`本作架空古代设定中，朝堂官员与君主均为女性。
+
+1. 体力、银钱为基础可见数值，体力 ≤ 0 将会触发结局、游戏结束。
+
+2. 才能、圆滑/贪腐、忠直为隐藏数值，将影响关于走向。
+
+3. 官职升贬主要由剧情选项决定，且分支/结局丰富，推荐使用存读档功能体验完整剧情。
+
+4. 在任完成全部公务后，将进行考绩评定：上等升迁，下等罢黜/平调，平调将于正六品开启。`;
+  modalCareerTop.textContent="";
+  modClose.textContent="返回首页";
+  modal.classList.add("show");
+  updateSaveButtonState();
+};
+nameTag.onclick=()=>{const key=state.careerHigh;const info=CAREER_DATA[key];if(info){caDept.textContent=info.dept;caLoc.textContent=info.loc;caDesc.textContent=info.desc;caPrev.textContent=info.prev;}careerMask.classList.add("show");};
+closeCareerBtn.onclick=()=>{careerMask.classList.remove("show");};
+let isRealEnding=false;
+let pendingPromotion=null;
+function showEnding(endKey){isRealEnding=true;saveUnlockEnd(endKey);const ed=ENDINGS_DEF[endKey];if(endKey==="ascendSail"){state.careerHigh="从五品驸马都尉";}modalCareerTop.textContent="仕途顶点："+state.careerHigh;modTitle.textContent=ed.name;modBody.textContent=ed.desc;modClose.textContent="返回首页";modal.classList.add("show");updateSaveButtonState();}
+saveOpenBtn.onclick=()=>{const canSave=(game.style.display==="block")&&!modal.classList.contains("show")&&!state.atResultPage;if(!canSave)return;saveModalTitle.innerText="存档档位";window.saveMode="save";renderSaveSlots();saveMask.classList.add("show");};
+loadOpenBtn.onclick=()=>{saveModalTitle.innerText="读取存档";window.saveMode="load";renderSaveSlots();saveMask.classList.add("show");};
+closeSaveBtn.onclick=()=>{saveMask.classList.remove("show");};
+originItems.forEach(el=>{el.onclick=()=>{originItems.forEach(x=>x.classList.remove("active"));el.classList.add("active");state.origin=el.dataset.origin;startBtn.disabled=false;};});
+playerNameInput.oninput=()=>{if(state.origin){startBtn.disabled=playerNameInput.value.trim().length===0;}};
+startBtn.onclick=()=>{const n=playerNameInput.value.trim()||"无名";state.name=n;prologueTextEl.textContent=PROLOGUE_TEXT[state.origin];prologueMask.style.display="flex";};
+prologueConfirm.onclick=()=>{if(state.origin==="noble"){prologueMask.style.display="none";return;}prologueMask.style.display="none";home.style.display="none";game.style.display="block";statusBox.style.display="flex";nameTag.textContent=state.name;rankTag.textContent=state.careerHigh;refreshStatus();renderEvent(events[0],"");updateSaveButtonState();};
+modClose.onclick=()=>{modal.classList.remove("show");updateSaveButtonState();if(isRealEnding){resetGame();}else{
+  if(pendingPromotion==="rank9Zheng"){state.rank9Zheng=true;state.zhengIndex=0;state.zhengSelected=[];state.zhengFlags=[];state.careerHigh="正九品 营构丞";rankTag.textContent=state.careerHigh;renderEvent(eventsRank9Zheng[0],"");}
+  else if(pendingPromotion==="rank8Cong"){state.rank9Zheng=false;state.rank8Cong=true;state.rank8Index=0;state.rank8Selected=[];state.rank8Flags=[];state.careerHigh="从八品 左校署令";rankTag.textContent=state.careerHigh;renderEvent(eventsRank8Cong[0],"");}
+  else if(pendingPromotion==="rank8Zheng"){state.rank8Cong=false;state.rank8Zheng=true;state.zheng8Index=0;state.zheng8Selected=[];state.zheng8Flags=[];state.hasFormerSuperiorEvent=false;state.careerHigh="正八品 武库署丞";rankTag.textContent=state.careerHigh;renderEvent(eventsRank8Zheng[0],"");}
+  else if(pendingPromotion==="rank7"){alert("从七品篇章尚未开发完成");}
+  else{alert("更高篇章尚未开发");}
+}pendingPromotion=null;isRealEnding=false;};
+function refreshStatus(){moneyEl.textContent=state.money+" 两";staminaEl.textContent=state.stamina+" / 10";}
+function renderEvent(ev,tip){optList.innerHTML="";resultBlock.style.display="none";optList.style.display="flex";state.atResultPage=false;caseMark.textContent=ev.mark;caseTitle.textContent=ev.title;caseDesc.innerText=ev.desc;progressText.textContent=tip||"";ev.options.forEach((opt,i)=>{const div=document.createElement("div");div.className="opt-item";let labelText=opt.label;if(opt.isRandom){labelText+="（概率结局）";}div.textContent=labelText;let costMoney=opt.money??opt.moneyOk??0;if(costMoney<0&&(state.money+costMoney)<0){div.classList.add("disabled-opt");}else{div.onclick=()=>selectOpt(ev,i);}optList.appendChild(div);});updateSaveButtonState();}
+function makeAttrTags(opt){
+  const tags=[];
+  const m=opt.money??opt.moneyOk;
+  const s=opt.stamina??opt.staminaOk;
+  const ta=opt.tact??opt.tactOk??0;
+  const lo=opt.loyal??opt.loyalOk??0;
+  const tal=opt.talent??opt.talentOk??0;
+  const cr=opt.corrupt??opt.corruptOk??0;
+  if(m!==undefined&&m!==0){tags.push({text:"银钱 "+(m>0?"+":"")+m,isPlus:m>0});}
+  if(s!==undefined&&s!==0){tags.push({text:"体力 "+(s>0?"+":"")+s,isPlus:s>0});}
+  if(cr!==0){tags.push({text:"贪腐 +"+cr,isPlus:true});}
+  if(ta!==0){tags.push({text:"圆滑 +"+ta,isPlus:true});}
+  if(lo!==0){tags.push({text:"忠直 +"+lo,isPlus:true});}
+  if(tal!==0){tags.push({text:"才干 +"+tal,isPlus:true});}
+  return tags;
+}
+function applyCorruptOnce(opt){
+  const cr=opt.corrupt??opt.corruptOk??0;
+  if(cr>0){
+    state.corrupt += state.tact + cr;
+    state.tact = 0;
+    return true;
+  }
+  return false;
+}
+function selectOpt(ev,idx){const opt=ev.options[idx];if(opt.triggerEnd){showEnding(opt.triggerEnd);return;}if(opt.isRandom){const r=Math.random();const threshold=opt.prob??0.7;
+  if(opt.resultFail==="GREED_FAIL"){if(r>=threshold){showEnding("greedFail");return;}else{state.money+=opt.moneyOk;state.stamina+=opt.staminaOk;state.loyal+=opt.loyalOk||0;state.talent+=opt.talentOk||0;const triggered=applyCorruptOnce(opt);if(opt.flagKey){if(state.rank9Zheng)state.zhengFlags.push(opt.flagKey);if(state.rank8Cong)state.rank8Flags.push(opt.flagKey);if(state.rank8Zheng)state.zheng8Flags.push(opt.flagKey);}refreshStatus();if(state.stamina<=0){showEnding("overworkDead");return;}resStory.textContent=opt.resultOk;tagWrap.innerHTML="";const arr=makeAttrTags(opt);if(triggered){arr.push({text:"此前“圆滑”全部转为“贪腐”",isPlus:true});}arr.forEach(item=>{const sp=document.createElement("span");sp.className="tag-item "+(item.isPlus?"plus":"minus");sp.textContent=item.text;tagWrap.appendChild(sp);});optList.style.display="none";resultBlock.style.display="block";state.atResultPage=true;updateSaveButtonState();return;}}
+  if(opt.resultFail==="BEAM_DEAD"){if(r>=threshold){showEnding("beamDead");return;}else{state.money+=opt.moneyOk;state.stamina+=opt.staminaOk;state.tact+=opt.tactOk;state.loyal+=opt.loyalOk||0;state.talent+=opt.talentOk||0;refreshStatus();if(state.stamina<=0){showEnding("overworkDead");return;}resStory.textContent=opt.resultOk;tagWrap.innerHTML="";const arr=makeAttrTags(opt);arr.forEach(item=>{const sp=document.createElement("span");sp.className="tag-item "+(item.isPlus?"plus":"minus");sp.textContent=item.text;tagWrap.appendChild(sp);});optList.style.display="none";resultBlock.style.display="block";state.atResultPage=true;updateSaveButtonState();return;}}
+  if(opt.resultFail==="FAIL_TRUST"){if(r>=threshold){showEnding("trustFail");return;}else{state.money+=opt.moneyOk;state.stamina+=opt.staminaOk;state.tact+=opt.tactOk;state.loyal+=opt.loyalOk||0;state.talent+=opt.talentOk||0;refreshStatus();if(state.stamina<=0){showEnding("overworkDead");return;}resStory.textContent=opt.resultOk;tagWrap.innerHTML="";const arr=makeAttrTags(opt);arr.forEach(item=>{const sp=document.createElement("span");sp.className="tag-item "+(item.isPlus?"plus":"minus");sp.textContent=item.text;tagWrap.appendChild(sp);});optList.style.display="none";resultBlock.style.display="block";state.atResultPage=true;updateSaveButtonState();return;}}}
+  if(state.rank9Zheng){state.zhengSelected[state.zhengIndex]=idx;if(opt.flagKey)state.zhengFlags.push(opt.flagKey);}
+  else if(state.rank8Cong){state.rank8Selected[state.rank8Index]=idx;if(opt.flagKey)state.rank8Flags.push(opt.flagKey);}
+  else if(state.rank8Zheng){state.zheng8Selected[state.zheng8Index]=idx;if(opt.flagKey)state.zheng8Flags.push(opt.flagKey);}
+  else{state.selected[state.index]=idx;if(opt.flagKey)state.flags[opt.flagKey]=true;}
+  state.money+=opt.money??0;state.stamina+=opt.stamina??0;state.tact+=opt.tact??0;state.loyal+=opt.loyal??0;state.talent+=opt.talent??0;
+  const triggered=applyCorruptOnce(opt);
+  refreshStatus();if(state.stamina<=0){showEnding("overworkDead");return;}
+  resStory.textContent=opt.result;tagWrap.innerHTML="";const arr=makeAttrTags(opt);if(triggered){arr.push({text:"此前“圆滑”全部转为“贪腐”",isPlus:true});}arr.forEach(item=>{const sp=document.createElement("span");sp.className="tag-item "+(item.isPlus?"plus":"minus");sp.textContent=item.text;tagWrap.appendChild(sp);});optList.style.display="none";resultBlock.style.display="block";state.atResultPage=true;updateSaveButtonState();}
+nextEv.onclick=()=>{state.atResultPage=false;optList.style.display="flex";
+  if(state.rank9Zheng){if(state.zhengIndex===0&&!state.hasRestTeamEvent){const roll=Math.random();if(roll<0.4){state.hasRestTeamEvent=true;renderEvent(restTeamEvent,"特殊事件 · 休沐团建");return;}}state.zhengIndex++;if(state.zhengIndex>=eventsRank9Zheng.length){let badCount=0;const badKeys=["zhengB","zhengD","zhengE","zhengG","zhengH"];badKeys.forEach(k=>{if(state.zhengFlags.includes(k))badCount++;});if(badCount>=2){showEnding("dismiss");}else{isRealEnding=false;pendingPromotion="rank8Cong";modClose.textContent="即刻到任";state.stamina=10;state.money+=18;refreshStatus();modalCareerTop.textContent="";modTitle.textContent="考绩上等，准予升迁";modBody.textContent="考绩上等，准予升迁。体力回满至 10，银两+18，进入从八品篇章。";modal.classList.add("show");updateSaveButtonState();}return;}renderEvent(eventsRank9Zheng[state.zhengIndex],"");}
+  else if(state.rank8Cong){state.rank8Index++;if(state.rank8Index>=eventsRank8Cong.length){const bad8Set=new Set(["rank8A","rank8B","rank8D","rank8E"]);let bad8Count=0;for(const f of state.rank8Flags){if(bad8Set.has(f))bad8Count++;}if(bad8Count>=2){showEnding("dismiss");}else{isRealEnding=false;pendingPromotion="rank8Zheng";modClose.textContent="即刻到任";state.stamina=10;state.money+=28;refreshStatus();modalCareerTop.textContent="";modTitle.textContent="考绩上等，准予升迁";modBody.textContent="考绩上等，准予升迁。体力回满至 10，银两+28，进入正八品篇章。";modal.classList.add("show");updateSaveButtonState();}return;}renderEvent(eventsRank8Cong[state.rank8Index],"");}
+  else if(state.rank8Zheng){if(state.zheng8Index===0&&!state.hasFormerSuperiorEvent){const roll=Math.random();if(roll<0.5){state.hasFormerSuperiorEvent=true;renderEvent(formerSuperiorEvent,"特殊事件 · 前上官有喜");return;}}state.zheng8Index++;if(state.zheng8Index>=eventsRank8Zheng.length){const bad8ZhengSet=new Set(["zheng8A","zheng8B","zheng8D"]);let bad8ZhengCount=0;for(const f of state.zheng8Flags){if(bad8ZhengSet.has(f))bad8ZhengCount++;}if(bad8ZhengCount>=2){showEnding("dismiss");}else{isRealEnding=false;pendingPromotion="rank7";modClose.textContent="即刻到任";state.stamina=10;state.money+=18;refreshStatus();modalCareerTop.textContent="";modTitle.textContent="考绩上等，准予升迁";modBody.textContent="考绩上等，准予升迁。体力回满至 10，银两+18，进入从七品篇章。";modal.classList.add("show");updateSaveButtonState();}return;}renderEvent(eventsRank8Zheng[state.zheng8Index],"");}
+  else{if(state.index>=2){if(!state.hasBirthEvent&&Math.random()<0.4){state.hasBirthEvent=true;renderEvent(birthEvent,"随机事件 · 上官生辰");return;}else{calcFinalJudge();return;}}state.index++;renderEvent(events[state.index],"");}};
+function calcFinalJudge(){const f=state.flags;let bad=0;if(f.task1B)bad++;if(f.task2A)bad++;if(f.task2B)bad++;if(f.task3B)bad++;if(bad>=2){showEnding("dismiss");}else{isRealEnding=false;pendingPromotion="rank9Zheng";modClose.textContent="即刻到任";state.stamina=10;state.money+=8;refreshStatus();modalCareerTop.textContent="";modTitle.textContent="考绩上等，准予升迁";modBody.textContent="考绩上等，准予升迁。体力恢复至 10，发放从九品年俸八两，进入正九品篇章。";modal.classList.add("show");updateSaveButtonState();}}
+function resetGame(){state.name="无名";state.origin=null;state.money=5;state.stamina=8;state.tact=0;state.corrupt=0;state.loyal=0;state.talent=0;state.index=0;state.selected=[null,null,null];state.flags={task1B:false,task2A:false,task2B:false,task3B:false};state.careerHigh="从九品署理主事";state.hasBirthEvent=false;state.hasRestTeamEvent=false;state.atResultPage=false;state.rank9Zheng=false;state.zhengIndex=0;state.zhengSelected=[];state.zhengFlags=[];state.rank8Cong=false;state.rank8Index=0;state.rank8Selected=[];state.rank8Flags=[];state.rank8Zheng=false;state.zheng8Index=0;state.zheng8Selected=[];state.zheng8Flags=[];state.hasFormerSuperiorEvent=false;home.style.display="flex";game.style.display="none";statusBox.style.display="none";playerNameInput.value="";originItems.forEach(x=>x.classList.remove("active"));startBtn.disabled=true;updateSaveButtonState();}
+function getAllSave(){const raw=localStorage.getItem(SAVE_KEY);if(!raw)return[null,null,null];try{return JSON.parse(raw);}catch(e){return[null,null,null];}}
+function saveAllSave(slots){localStorage.setItem(SAVE_KEY,JSON.stringify(slots));}
+function renderSaveSlots(){const slots=getAllSave();slotListWrap.innerHTML="";for(let i=0;i<3;i++){const slotData=slots[i];const div=document.createElement("div");div.className="slot-item";const infoWrap=document.createElement("div");infoWrap.className="slot-info";if(slotData){const saveTime=new Date(slotData.saveTime).toLocaleString();let rankTip;if(slotData.rank8Zheng)rankTip="正八品";else if(slotData.rank8Cong)rankTip="从八品";else if(slotData.rank9Zheng)rankTip="正九品";else rankTip="从九品";let pageHint=slotData.atResultPage?"【结果页】":"【选项页】";infoWrap.innerText=`存档${i+1}｜${slotData.name}｜${rankTip} ${pageHint}｜${saveTime}`;}else{infoWrap.innerText=`存档${i+1}`;infoWrap.classList.add("slot-empty");}const btnWrap=document.createElement("div");btnWrap.className="slot-buttons";if(window.saveMode==="save"){const saveBtn=document.createElement("button");saveBtn.className="slot-btn";saveBtn.innerText="保存";saveBtn.onclick=()=>writeSave(i);btnWrap.appendChild(saveBtn);}else{if(slotData){const loadBtn=document.createElement("button");loadBtn.className="slot-btn";loadBtn.innerText="读取";loadBtn.onclick=()=>loadSave(i);btnWrap.appendChild(loadBtn);}}if(slotData){const delBtn=document.createElement("button");delBtn.className="slot-btn del";delBtn.innerText="删除";delBtn.onclick=()=>delSave(i);btnWrap.appendChild(delBtn);}div.appendChild(infoWrap);div.appendChild(btnWrap);slotListWrap.appendChild(div);}}
+function writeSave(slotIndex){const slots=getAllSave();let progressLabel="";if(state.rank8Zheng){progressLabel=`正八品公务${state.zheng8Index+1}`;}else if(state.rank8Cong){progressLabel=`从八品公务${state.rank8Index+1}`;}else if(state.rank9Zheng){progressLabel=`正九品公务${state.zhengIndex+1}`;}else if(state.hasBirthEvent){progressLabel="上官生辰事件";}else if(state.hasRestTeamEvent){progressLabel="休沐团建事件";}else{progressLabel=`公务${state.index+1}`;}slots[slotIndex]={...JSON.parse(JSON.stringify(state)),saveTime:new Date().toISOString(),progress:progressLabel};saveAllSave(slots);renderSaveSlots();alert(`成功存入存档${slotIndex+1}`);}
+function loadSave(slotIndex){const slots=getAllSave();const data=slots[slotIndex];if(!data)return;Object.assign(state,data);nameTag.textContent=state.name;rankTag.textContent=state.careerHigh;refreshStatus();home.style.display="none";game.style.display="block";statusBox.style.display="flex";saveMask.classList.remove("show");
+  if(state.rank8Zheng){if(state.hasFormerSuperiorEvent){renderEvent(formerSuperiorEvent,"特殊事件 · 前上官有喜");}else{renderEvent(eventsRank8Zheng[state.zheng8Index],"");}}
+  else if(state.rank8Cong){renderEvent(eventsRank8Cong[state.rank8Index],"");}
+  else if(state.rank9Zheng){if(state.hasRestTeamEvent){renderEvent(restTeamEvent,"特殊事件 · 休沐团建");}else{renderEvent(eventsRank9Zheng[state.zhengIndex],"");}}
+  else{if(state.hasBirthEvent){renderEvent(birthEvent,"随机事件 · 上官生辰");}else{renderEvent(events[state.index],"");}}
+  if(state.atResultPage){optList.style.display="none";resultBlock.style.display="block";resStory.textContent="";tagWrap.innerHTML="";}updateSaveButtonState();}
+function delSave(slotIndex){const slots=getAllSave();slots[slotIndex]=null;saveAllSave(slots);renderSaveSlots();alert(`已删除存档${slotIndex+1}`);}
+// ===== 隐藏调试面板：连点银钱3下呼出 =====
+let moneyTapCount=0;let moneyTapTimer=null;
+moneyEl.style.cursor="default";moneyEl.style.userSelect="none";
+moneyEl.addEventListener("click",()=>{
+  moneyTapCount++;
+  clearTimeout(moneyTapTimer);
+  if(moneyTapCount>=3){moneyTapCount=0;showHiddenAttrPanel();return;}
+  moneyTapTimer=setTimeout(()=>{moneyTapCount=0;},800);
+});
+function showHiddenAttrPanel(){
+  const talentVal=state.talent;const corruptVal=state.corrupt;
+  const loyalVal=state.loyal;const tactVal=state.tact;
+  const panel=document.createElement("div");
+  panel.style=`position:fixed;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;z-index:9999;padding:12px;`;
+  panel.innerHTML=`
+    <div style="background:#fbf5e8;padding:24px;border-radius:14px;min-width:280px;max-width:340px;border:1px solid #c8b492;">
+      <h3 style="text-align:center;margin-bottom:18px;color:#b9412c;letter-spacing:2px;">策划调试｜隐藏属性</h3>
+      <p style="font-size:16px;margin:10px 0;">才干：${talentVal}</p>
+      <p style="font-size:16px;margin:10px 0;">圆滑：${tactVal}</p>
+      <p style="font-size:16px;margin:10px 0;">贪腐：${corruptVal}</p>
+      <p style="font-size:16px;margin:10px 0;">忠直：${loyalVal}</p>
+      <div style="margin-top:20px;text-align:center;">
+        <button id="closeAttrPanel" class="main-btn">关闭</button>
+      </div>
+    </div>`;
+  document.body.appendChild(panel);
+  document.getElementById("closeAttrPanel").onclick=()=>{panel.remove();};
+  panel.onclick=(e)=>{if(e.target===panel){panel.remove();}};
+  function escHandler(ev){if(ev.key==="Escape"){panel.remove();document.removeEventListener("keydown",escHandler);}}
+  document.addEventListener("keydown",escHandler);
+}
+</script>
+</body>
+</html>
